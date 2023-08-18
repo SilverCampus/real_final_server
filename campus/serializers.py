@@ -59,8 +59,8 @@ class CourseSerializer(serializers.ModelSerializer):
     
     def get_category_name(self, obj):
         return obj.category.name
-
-
+    
+    
 
 class BasicCourceInfoSerializer(serializers.ModelSerializer):
     
@@ -68,7 +68,9 @@ class BasicCourceInfoSerializer(serializers.ModelSerializer):
     instructor = serializers.SerializerMethodField()
     is_this_instructor = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
-    category_name=serializers.SerializerMethodField()
+    category_name = serializers.SerializerMethodField()
+
+
 
     class Meta:
         model = Course
@@ -98,7 +100,7 @@ class BasicCourceInfoSerializer(serializers.ModelSerializer):
             return False
         
         return True
-    
+
     def get_category_name(self, obj):
         return obj.category.name
 
@@ -196,6 +198,7 @@ class SearchCoursesSerializer(serializers.ModelSerializer):
 
 
 
+
 class CourseVideoListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Video
@@ -216,7 +219,7 @@ class PurchasedCoursesSerializer(serializers.ModelSerializer):
     
     def get_completion_rate(self, obj):
         user = self.context['request'].user  # 현재 로그인해 있는 사람의 정보를 가져옴!!
-        return round(obj.completion_rate(user), 2)
+        return obj.completion_rate(user)
     
     def get_instructor(self, obj):
         return obj.instructor.nickname
@@ -250,7 +253,6 @@ class LikedCoursesSerializer(serializers.ModelSerializer):
     
     def get_category_name(self, obj):
         return obj.category.name
-    
 
 class LaunchCourseSerializer(serializers.ModelSerializer):
     video_count = serializers.SerializerMethodField() # video_count 필드 추가
@@ -284,7 +286,6 @@ class CourseDescriptionUpdateSerializer(serializers.ModelSerializer):
         model = Course
         fields = '__all__'
 
-
 class GetCourseVideoSerializer(serializers.ModelSerializer):
     completed = serializers.SerializerMethodField() # 완강 여부 시리얼라이저 변수 추가
 
@@ -301,7 +302,7 @@ class GetCourseVideoSerializer(serializers.ModelSerializer):
             return False
         
         return True
-    
+
 
 class GetRecentlyWatchedCoursesSerializer(serializers.ModelSerializer):
     video_count = serializers.SerializerMethodField() # video_count 필드 추가
@@ -320,7 +321,6 @@ class GetRecentlyWatchedCoursesSerializer(serializers.ModelSerializer):
     
     def get_category_name(self, obj):
         return obj.category.name
-
 
 class VideoCompletionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -371,5 +371,4 @@ class GetUserInfoSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'nickname', 'is_instructor', 'total_credits', 'grade']
         
         
-
 
