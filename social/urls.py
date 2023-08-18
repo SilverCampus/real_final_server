@@ -17,6 +17,8 @@ urlpatterns = [
     path('hashtags/', hashtag_list, name='hashtag-list'), 
     path('posts/tag/<str:hashtag_name>/', views.posts_by_hashtag, name='posts-by-hashtag'),
     path('my-posts/', views.my_posts, name='my-posts'),
+    path('board-posts/', views.get_all_board_posts, name='get-all-board-posts'),
+
 
 ]
 

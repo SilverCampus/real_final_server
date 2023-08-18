@@ -17,6 +17,8 @@ import boto3
 from moviepy.editor import VideoFileClip
 from django.conf import settings
 import tempfile
+from tempfile import NamedTemporaryFile
+from django.core.exceptions import ObjectDoesNotExist
 
 
 
@@ -102,7 +104,6 @@ def add_like(request):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-# 4번
 @api_view(['POST'])
 @permission_classes((permissions.IsAuthenticated,))
 def post_upload(request):
@@ -126,47 +127,46 @@ def post_upload(request):
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
     )
 
+    # 비디오 파일을 임시 파일로 저장
+    with NamedTemporaryFile(delete=False) as temp_video_file:
+        for chunk in video_file.chunks():
+            temp_video_file.write(chunk)
+
     # 비디오 파일 S3에 업로드
     video_path = 'videos/' + str(video_file)
-    s3_client.upload_fileobj(video_file, settings.AWS_STORAGE_BUCKET_NAME, video_path, ExtraArgs={'ContentType': video_file.content_type})
+
+    with open(temp_video_file.name, 'rb') as f:
+        s3_client.upload_fileobj(f, settings.AWS_STORAGE_BUCKET_NAME, video_path, ExtraArgs={'ContentType': video_file.content_type})
+
     video_url = f'{video_path}'
 
     # 영상에서 썸네일 생성
-    if video_file:
-        # 임시 파일에 업로드 된 비디오 파일을 저장
-        temp_video_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-        for chunk in video_file.chunks():
-            temp_video_file.write(chunk)
-        temp_video_file.flush()  # 파일에 쓰기 작업을 강제로 완료
-        temp_video_file.close()  # 파일 닫기
-
-        with VideoFileClip(temp_video_file.name) as clip:
-            thumbnail_path = os.path.join("/tmp", f"thumb_{os.path.basename(video_file.name)}.png")
-            clip.save_frame(thumbnail_path, t=1.00)
-
-            # S3에 썸네일 업로드
-            with open(thumbnail_path, 'rb') as thumb_file:
-                thumb_s3_path = 'thumbnails/' + os.path.basename(thumbnail_path)
-                s3_client.upload_fileobj(thumb_file, settings.AWS_STORAGE_BUCKET_NAME, thumb_s3_path, ExtraArgs={'ContentType': 'image/png'})
-                thumbnail_url = f'{thumb_s3_path}'
-
-            os.remove(thumbnail_path) # 임시 썸네일 파일 삭제
-
-        os.unlink(temp_video_file.name) # 임시 비디오 파일 삭제
+    with VideoFileClip(temp_video_file.name) as clip:
+        thumbnail_path = f"/tmp/thumb_{video_file.name}.png"
+        clip.save_frame(thumbnail_path, t=0.00)
+        
+    # 썸네일 파일 S3에 업로드
+    thumbnail_s3_path = 'thumbnails/' + str(video_file.name) + ".png"
+    with open(thumbnail_path, "rb") as f:
+        s3_client.upload_fileobj(f, settings.AWS_STORAGE_BUCKET_NAME, thumbnail_s3_path, ExtraArgs={'ContentType': 'image/png'})
+    thumbnail_url = f'{thumbnail_s3_path}'
 
     # 게시물 저장
     post = BoardPost(
         user=user,
-        # title=title,
         content=content,
         video=video_url,
-        # video_thumbnail=thumbnail_url,
+        video_thumbnail=thumbnail_url,
         hashtags=hashtag
     )
     post.save()
 
+    # 임시 파일 삭제
+    os.remove(temp_video_file.name)
+
     serializer = PostUploadSerializer(post)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 
 ## 5. hashtag 리스트 불러오는 api
@@ -180,7 +180,11 @@ def hashtag_list(request):
 @api_view(['GET'])
 @permission_classes((permissions.AllowAny,))
 def posts_by_hashtag(request, hashtag_name):
-    posts = BoardPost.objects.filter(hashtags__name=hashtag_name)
+    try:
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+    except ObjectDoesNotExist:     
+        return Response({"data":"There is no object."}, status=200)
+    posts = BoardPost.objects.filter(hashtags = hashtag)
     serializer = BoardPostSerializer(posts, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -193,5 +197,12 @@ def my_posts(request):
     serializer = BoardPostSerializer(posts, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-
+# 8. boardpost 모델에서 글 가져오는 API
+@api_view(['GET'])
+@permission_classes((permissions.IsAuthenticated,))
+def get_all_board_posts(request):
+    if request.method == 'GET':
+        posts = BoardPost.objects.all()
+        serializer = BoardPostSerializer(posts, many=True)
+        return Response(serializer.data)
 
