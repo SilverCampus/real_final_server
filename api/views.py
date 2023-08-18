@@ -571,7 +571,7 @@ def video_completion(request):
 # 15. 구매 여부와 상관없이 특정 한 강좌에 대한 기본 정보를 반환하는 API(GET)
 @api_view(['GET'])
 @permission_classes((permissions.IsAuthenticated,))
-def basic_cource_info(request): # 쿼리 파라미터로 받아야 할 정보: course_id, 토큰은 받아야!!
+def basic_cource_info(request): # 쿼리 파라미터로 받아야 할 정보: course_id
     
     # is_this_instructor True False로 반환해주는거 반영, 그리고 해당 유저가
     # 저 강의 찜 했는지 안 했는지 체크 하는 것도 넣어야!
@@ -583,7 +583,8 @@ def basic_cource_info(request): # 쿼리 파라미터로 받아야 할 정보: c
     except ObjectDoesNotExist:
         return Response({"error": "there is no Course"}, status=status.HTTP_400_BAD_REQUEST)
     
-        # Serializer를 사용해 JSON 응답 생성
+
+        # Serializer를 사용해 JSON 응답 생성 하기
     serializer = BasicCourceInfoSerializer(course, context={'user': user})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -673,4 +674,3 @@ def get_user_info(request):
 
 
     
-

@@ -23,6 +23,7 @@ class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+
 class CategoryViewSet(ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -58,7 +59,6 @@ class QuestionViewSet(ModelViewSet):
 class RecentlyWatchedViewSet(ModelViewSet):
     queryset = RecentlyWatched.objects.all()
     serializer_class = RecentlyWatchedSerializer
-
 
 
 

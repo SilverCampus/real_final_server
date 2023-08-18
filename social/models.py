@@ -6,7 +6,7 @@ class Hashtag(models.Model):
 
     def __str__(self):
         return self.name
-
+    
 
 class BoardPost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -30,11 +30,13 @@ class BoardComment(models.Model):
     def __str__(self):
         return self.content[:20] + "..."
 
-
 class BoardPostLike(models.Model):
     post = models.ForeignKey(BoardPost, related_name='likes', on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     liked_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ['post', 'user']
+
     def __str__(self):
-        return f"{self.user.nickname}의 좋아요"
+        return f"{self.user.username}의 좋아요"

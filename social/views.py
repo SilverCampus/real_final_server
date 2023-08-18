@@ -2,7 +2,7 @@ from rest_framework import viewsets
 from .models import BoardPost, BoardComment, BoardPostLike, Hashtag
 from .serializers import (
     BoardPostSerializer, BoardCommentSerializer, BoardPostLikeSerializer, AuthorSerializer, PostCommentSerializer,
-    PostUploadSerializer, HashtagSerializer, PostsByHashtagSerializer, GetAllBoardPostsSerializer)
+    PostUploadSerializer, HashtagSerializer, PostsByHashtagSerializer, GetAllBoardPostsSerializer, BoardPostByHashtagSerializer)
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -34,7 +34,7 @@ class BoardPostLikeViewSet(viewsets.ModelViewSet):
     queryset = BoardPostLike.objects.all()
     serializer_class = BoardPostLikeSerializer
 
-# 1. 특정 게시물 페이지 API
+# 1. 특정 게시물 페이지 API (ok)
 # 게시물 사진, 게시물 내용, 작성자명, 댓글, 좋아요 수 반환
 # 프론트로부터 넘겨 받아야 할 정보: post_id
 @api_view(['GET'])
@@ -68,7 +68,7 @@ def get_post_details(request, post_id):
     
     return Response(post_data, status=status.HTTP_200_OK)
 
-# 2. 댓글 추가 비동기 API
+# 2. 댓글 추가 API (ok)
 # 댓글 추가, 새로고침 안되도록
 @api_view(['POST'])
 @permission_classes((permissions.IsAuthenticated,))
@@ -85,7 +85,7 @@ def add_comment(request):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-# 3. 좋아요 추가 비동기 API
+# 3. 좋아요 추가 API (ok)
 # 좋아요 추가, 새로고침 안되도록
 @api_view(['POST'])
 @permission_classes((permissions.IsAuthenticated,))
@@ -116,7 +116,7 @@ def add_like(request):
     
 
 
-# 4번 (ok)
+# 4번 새 글 작성 (ok)
 @api_view(['POST'])
 @permission_classes((permissions.IsAuthenticated,))
 def post_upload(request):
@@ -194,13 +194,8 @@ def hashtag_list(request):
 @api_view(['GET'])
 @permission_classes((permissions.AllowAny,))
 def posts_by_hashtag(request, hashtag_name):
-    try:
-        hashtag = Hashtag.objects.get(name=hashtag_name)
-    except ObjectDoesNotExist:     
-        return Response({"data":"There is no object."}, status=status.HTTP_200_OK)
-    
-    posts = BoardPost.objects.filter(hashtags = hashtag)
-    serializer = PostsByHashtagSerializer(posts, many=True)
+    posts = BoardPost.objects.filter(hashtags__name=hashtag_name)
+    serializer = BoardPostByHashtagSerializer(posts, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
     
 
@@ -224,4 +219,3 @@ def get_all_board_posts(request):
         serializer = GetAllBoardPostsSerializer(posts, many=True, context={"user":user})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
-
